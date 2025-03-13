@@ -10,8 +10,6 @@ La API de **Catalonia Blackball Party** está diseñada para gestionar las funci
 - **SQLAlchemy**: ORM para interactuar con la base de datos de manera sencilla.
 - **Firebase**: Utilizado para la autenticación de usuarios y envío de notificaciones push.
 - **SMTP (Gmail)**: Para el envío de correos electrónicos de confirmación y notificaciones a los usuarios.
-- **Docker**: Contenedor utilizado para facilitar el desarrollo y despliegue de la API.
-- **Heroku / IONOS**: Servicios utilizados para desplegar la API en producción.
 
 ## Funcionalidades
 
