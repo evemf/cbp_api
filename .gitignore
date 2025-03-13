@@ -1,0 +1,57 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.db
+*.sqlite3
+*.log
+
+# Ignorar el archivo .env real con información sensible
+.env
+
+# Asegúrate de que el archivo .env.example sea añadido al repositorio
+!.env.example
+
+# Directorios y archivos generados por el entorno de desarrollo
+*.env
+*.venv
+.venv/
+env/
+venv/
+
+# Archivos de configuración del IDE
+.vscode/
+.idea/
+
+# Dependencias de Python
+*.egg-info/
+dist/
+build/
+
+# Archivos de instalación de pip
+pip-wheel-metadata/
+
+# Configuración de herramientas de desarrollo como flake8
+.flake8
+.coverage
+*.coveragerc
+
+# Archivos de distribución
+*.egg
+
+# Archivos temporales y backup
+*.swp
+*~
+*.bak
+*.tmp
+
+# Archivos específicos de pyenv
+.python-version
+
+# Archivos de instalación de Poetry
+poetry.lock
+poetry.toml
+
+# Archivos específicos de ASGI y WSGI
+*.sock
