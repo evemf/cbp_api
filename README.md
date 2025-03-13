@@ -1,6 +1,6 @@
 # Catalonia Blackball Party API
 
-La API de **Catalonia Blackball Party** está diseñada para gestionar las funcionalidades clave de un evento de forma eficiente, como la gestión de usuarios, pagos, y la integración con Firebase para el envío de notificaciones push.
+La API de **Catalonia Blackball Party** está diseñada para gestionar las funcionalidades clave del CBP de forma eficiente, como la gestión de usuarios, pagos, y la integración con Firebase para el envío de notificaciones push.
 
 ## Tecnologías Utilizadas
 
