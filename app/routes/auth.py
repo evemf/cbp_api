@@ -1,96 +1,82 @@
-# app/routes/auth.py
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import RedirectResponse  
+from fastapi import Header
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth import UserRegister, UserLogin
-from app.crud import get_user_by_email, create_user
+from app.schemas.auth import UserRegister, UserLogin, CompleteProfile
+from app.crud import get_user_by_email, create_user, complete_user_profile
 from app.utils.security import verify_password, create_access_token, create_verification_token, verify_token
 from app.utils.email_utils import send_verification_email
+import os
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Esquemas para autenticación
-class UserLogin(BaseModel):
-    username: str
-    password: str
-
-class UserRegister(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-
-# Ruta para registrar al usuario
-@router.post("/register", tags=["auth"])
+# 🔹 Registro con solo email
+@router.post("/register")
 async def register(user: UserRegister, db: Session = Depends(get_db)):
-    # Verificar si el correo ya está registrado
     existing_user = get_user_by_email(db, user.email)
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El correo electrónico ya está registrado.",
-        )
+        raise HTTPException(status_code=400, detail="El correo electrónico ya está registrado.")
 
-    # Crear el usuario en la base de datos
-    new_user = create_user(db, user)
-
-    # Crear un token de verificación
+    new_user = create_user(db, user.email)
     verification_token = create_verification_token(user.email)
 
-    # Enviar el email de verificación
     await send_verification_email(user.email, verification_token)
 
     return {"message": f"Se ha enviado un email de verificación a {user.email}."}
 
-# Ruta para verificar el correo electrónico del usuario
-@router.get("/verify/{token}", tags=["auth"])
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8080") 
+@router.get("/verify/{token}")
 def verify_email(token: str, db: Session = Depends(get_db)):
+    print(f"Token recibido: {token}") 
     try:
-        # Verificar el token de verificación
         email = verify_token(token)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token inválido o expirado."
-        )
-
-    # Buscar al usuario por email
-    user = db.query(User).filter(User.email == email).first()
-
+        raise HTTPException(status_code=400, detail=f"Token inválido o expirado: {str(e)}")
+    
+    user = get_user_by_email(db, email)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuario no encontrado."
-        )
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
-    # Marcar la cuenta como activa
     user.is_active = True
-    user.verification_token = None  # Limpiar el token de verificación
     db.commit()
 
-    return {"message": "Cuenta verificada correctamente. Ya puedes iniciar sesión."}
+    return RedirectResponse(url=f"{FRONTEND_URL}/complete-profile?token={token}", status_code=302)
 
-# Ruta para login (iniciar sesión)
-@router.post("/login", tags=["auth"])
+
+# Completar perfil tras verificar email
+@router.post("/complete-profile")
+async def complete_profile(
+    profile_data: CompleteProfile, 
+    db: Session = Depends(get_db), 
+    token: str = Header(None)  # Recibir el token en los headers
+):
+    if not token:
+        raise HTTPException(status_code=400, detail="Token de autenticación requerido.")
+
+    email = verify_token(token)  
+
+    user = get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    updated_user = complete_user_profile(db, user.id, profile_data)
+
+    return {"message": "Perfil completado con éxito.", "user": updated_user}
+
+# 🔹 Login
+@router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
-    # Buscar al usuario por email
-    existing_user = get_user_by_email(db, user.username)
+    existing_user = get_user_by_email(db, user.email)
     if not existing_user or not verify_password(user.password, existing_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales inválidas",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    # Verificar que la cuenta esté activa
     if not existing_user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cuenta inactiva. Revisa tu email y verifica tu cuenta."
-        )
+        raise HTTPException(status_code=403, detail="Cuenta inactiva. Revisa tu email y verifica tu cuenta.")
 
-    # Crear el token de acceso (JWT)
     token = create_access_token({"sub": existing_user.email})
 
     return {"access_token": token, "token_type": "bearer"}

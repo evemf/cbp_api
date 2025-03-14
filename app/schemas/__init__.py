@@ -2,7 +2,7 @@
 from .competition import CompetitionCreate, CompetitionRead
 from .reservation import ReservationCreate, ReservationRead
 from .match import MatchRead, MatchCreate, MatchUpdateScore
-from .base import UserCreate, UserRead, UserUpdate
+from .user import UserCreate, UserRead, UserUpdate
 
 __all__ = [
     "CompetitionCreate", "CompetitionRead", 

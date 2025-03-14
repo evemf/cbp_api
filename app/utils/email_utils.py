@@ -12,12 +12,16 @@ conf = ConnectionConfig(
     MAIL_FROM=os.getenv("MAIL_FROM"),
     MAIL_PORT=int(os.getenv("MAIL_PORT")),
     MAIL_SERVER=os.getenv("MAIL_SERVER"),
-    MAIL_STARTTLS=True,  # Incluir TLS
-    MAIL_SSL_TLS=False,  # No usar SSL
+    MAIL_STARTTLS=os.getenv("MAIL_TLS") == "True",  # Corregido
+    MAIL_SSL_TLS=os.getenv("MAIL_SSL") == "True",  # Corregido
+    USE_CREDENTIALS=os.getenv("USE_CREDENTIALS") == "True",  # Asegurar autenticación
+    VALIDATE_CERTS=os.getenv("VALIDATE_CERTS") == "True"  # Validar certificado
 )
 
+
 async def send_verification_email(email: str, token: str):
-    verification_link = f"http://localhost:8000/auth/verify/{token}"
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8000")  # Valor por defecto si no está en .env
+    verification_link = f"{frontend_url}/auth/verify/{token}"
     message = MessageSchema(
         subject="Verifica tu cuenta",
         recipients=[email],

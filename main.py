@@ -4,24 +4,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 import os
 from dotenv import load_dotenv
-from app.routes import routers  # Aseguramos la importación de los routers
+from app.routes import routers
 
-# Cargar variables de entorno
 load_dotenv()
 
-# Instancia de FastAPI
 app = FastAPI(title="Catalonia Blackball Party API")
 
-# Middleware para permitir CORS (útil si usas frontend separado)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8080")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambiar en producción por dominios específicos
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
-# Incluir todos los routers importados desde app.routes
 for router in routers:
     app.include_router(router)
 

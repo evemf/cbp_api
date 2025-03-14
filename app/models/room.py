@@ -11,7 +11,6 @@ class Room(Base):
     total_rooms = Column(Integer, default=0)  
     available_rooms = Column(Integer, default=0)  
     available = Column(Boolean, default=True) 
-
     reservations = relationship("Reservation", back_populates="room")
     
     def __repr__(self):

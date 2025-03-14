@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.models.competition import Competition  # Agregar app. antes de models
 from app.schemas.competition import CompetitionCreate, CompetitionRead, CompetitionUpdate
-from app.database import get_db  # Agregar app. antes de database
+from app.database import get_db  
 
 router = APIRouter(prefix="/competitions", tags=["competitions"])
 

@@ -1,53 +1,47 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.database import SessionLocal
-from .base import UserCreate, UserRead, UserUpdate
-from app.models.user import User
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from datetime import date
 
-router = APIRouter()
+class UserBase(BaseModel):
+    email: EmailStr
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+class UserCreate(UserBase):
+    password: str
 
-@router.get("/{user_id}", response_model=UserRead, tags=["users"])
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    from app.crud import get_user
-    user = get_user(db, user_id=user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    return user
+class UserRead(UserBase):
+    id: int
+    email: EmailStr
+    is_verified: bool
+    first_name: str
+    last_name: str
+    birth_date: Optional[date] = None
+    gender: Optional[str] = None
+    country: Optional[str] = None
+    phone_number: Optional[str] = None
 
-@router.get("/", response_model=list[UserRead], tags=["users"])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    from app.crud import get_users
-    users = get_users(db, skip=skip, limit=limit)
-    return users
+    class Config:
+        from_attributes = True
 
-@router.post("/", response_model=UserRead, tags=["users"])
-def create_user_profile(user: UserCreate, db: Session = Depends(get_db)):
-    from app.crud import create_user
-    existing_user = db.query(User).filter(User.email == user.email).first()
-    if existing_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Correo electrónico ya registrado")
-    new_user = create_user(db, user=user)
-    return new_user
+class UserUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    birth_date: Optional[date] = None
+    gender: Optional[str] = None
+    country: Optional[str] = None
+    phone_number: Optional[str] = None
 
-@router.put("/{user_id}", response_model=UserRead, tags=["users"])
-def update_user_profile(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
-    from app.crud import update_user
-    user = update_user(db, user_id=user_id, user_update=user_update)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    return user
+class UserVerification(BaseModel):
+    token: str
 
-@router.delete("/{user_id}", response_model=UserRead, tags=["users"])
-def delete_user_profile(user_id: int, db: Session = Depends(get_db)):
-    from app.crud import delete_user
-    user = delete_user(db, user_id=user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    return user
+class UserCompleteProfile(BaseModel):
+    email: EmailStr
+    password: str
+    first_name: str
+    last_name: str
+    birth_date: date
+    gender: str
+    country: str
+    phone_number: str
+
+class UserVerify(BaseModel):
+    token: str

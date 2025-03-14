@@ -2,12 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import SessionLocal
-from app.schemas.user import UserCreate, UserRead, UserUpdate
-from app.crud import get_user, get_users, create_user, update_user, delete_user  
+from app.schemas.user import UserCreate, UserRead, UserUpdate, UserVerify, UserCompleteProfile as UserComplete
+from app.crud import (
+    get_user, get_users, create_user, update_user, delete_user, 
+    verify_email, complete_user_profile, get_user_by_email
+)
+from app.utils.email_utils import send_verification_email
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-# Dependencia para obtener la sesión de base de datos
 def get_db():
     db = SessionLocal()
     try:
@@ -15,40 +18,45 @@ def get_db():
     finally:
         db.close()
 
-# Endpoint para listar todos los usuarios
-@router.get("/", response_model=List[UserRead], tags=["users"])
+@router.get("/", response_model=List[UserRead])
 def list_users(db: Session = Depends(get_db)):
     return get_users(db)
 
-# Endpoint para obtener detalles de un usuario específico por su ID
-@router.get("/{user_id}", response_model=UserRead, tags=["users"])
+@router.get("/{user_id}", response_model=UserRead)
 def read_user(user_id: int, db: Session = Depends(get_db)):
     user = get_user(db, user_id=user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     return user
 
-# Endpoint para crear un nuevo usuario
-@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED, tags=["users"])
-def create_new_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = create_user(db, user)
-    if not db_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error al crear usuario")
-    return db_user
+@router.put("/complete-profile", response_model=UserRead)
+def complete_profile(data: UserComplete, db: Session = Depends(get_db)):
+    user = get_user_by_email(db, data.email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+    
+    updated_user = complete_user_profile(db, user.id, data)
+    print("Usuario actualizado:", updated_user)
+    if not updated_user: 
+        raise HTTPException(status_code=500, detail="Error al actualizar el perfil")
 
-# Endpoint para actualizar el perfil de un usuario existente
-@router.put("/{user_id}", response_model=UserRead, tags=["users"])
+    return updated_user
+
+@router.put("/{user_id}", response_model=UserRead)
 def update_user_profile(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
     user = get_user(db, user_id=user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    return update_user(db, user_id=user_id, user_update=user_update)
+    
+    updated_user = update_user(db, user_id=user_id, user_update=user_update)
+    return updated_user
 
-# Endpoint para eliminar una cuenta de usuario
-@router.delete("/{user_id}", response_model=dict, tags=["users"], operation_id="delete_user_account_unique")
+@router.delete("/{user_id}", response_model=dict)
 def delete_user_account(user_id: int, db: Session = Depends(get_db)):
     user = get_user(db, user_id=user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    delete_user(db, user_id=user_id)
-    return {"detail": "Usuario eliminado correctamente"}
+    
+    response = delete_user(db, user_id=user_id) 
+    return response  
+
