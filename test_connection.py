@@ -1,25 +1,11 @@
-import smtplib
+from passlib.context import CryptContext
 
-EMAIL = "evemolina7@gmail.com"
-PASSWORD = "xiuakkrrvzfpjkhk"  # Usa tu contraseña de aplicación
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-try:
-    # Conéctate usando SMTP_SSL en el puerto 465
-    server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-    server.login(EMAIL, PASSWORD)
-    
-    # Mensaje
-    from_email = EMAIL
-    to_email = "evemolina7@gmail.com"  
-    subject = "Test Email SMTP 465"
-    body = "Este es un correo de prueba usando SMTP en puerto 465."
-    
-    email_message = f"Subject: {subject}\n\n{body}"
-    
-    # Envía el correo
-    server.sendmail(from_email, to_email, email_message)
-    server.quit()
+hashed_password = "$2b$12$wRuaY5sbL6WpUD3MR4p7ievKGpSesG1LsubDCm4SB/f/xNNlmvQiO"  # Hashed password de la BD
+input_password = "Neo#2017"  # La contraseña que estás usando para iniciar sesión
 
-    print("✅ Correo enviado correctamente en puerto 465")
-except Exception as e:
-    print(f"❌ Error: {e}")
+if pwd_context.verify(input_password, hashed_password):
+    print("✅ Contraseña válida")
+else:
+    print("❌ Contraseña inválida")

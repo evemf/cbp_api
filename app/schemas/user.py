@@ -3,26 +3,16 @@ from typing import Optional
 from datetime import date
 
 class UserBase(BaseModel):
-    email: EmailStr
+    email: EmailStr 
 
 class UserCreate(UserBase):
-    password: str
+    """Usado en el primer paso del registro (solo requiere email)."""
+    pass 
 
 class UserRead(UserBase):
     id: int
-    email: EmailStr
     is_verified: bool
-    first_name: str
-    last_name: str
-    birth_date: Optional[date] = None
-    gender: Optional[str] = None
-    country: Optional[str] = None
-    phone_number: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-class UserUpdate(BaseModel):
+    is_profile_complete: bool
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     birth_date: Optional[date] = None
@@ -30,12 +20,13 @@ class UserUpdate(BaseModel):
     country: Optional[str] = None
     phone_number: Optional[str] = None
 
-class UserVerification(BaseModel):
-    token: str
+    class Config:
+        orm_mode = True
+        from_attributes = True
 
 class UserCompleteProfile(BaseModel):
-    email: EmailStr
-    password: str
+    """Usado cuando el usuario completa su perfil tras verificar su email."""
+    password: str 
     first_name: str
     last_name: str
     birth_date: date
@@ -43,5 +34,14 @@ class UserCompleteProfile(BaseModel):
     country: str
     phone_number: str
 
+class UserUpdate(BaseModel):
+    """Usado para la página de 'Perfil de usuario', permite modificar datos opcionales."""
+    password: Optional[str] = None
+    birth_date: Optional[date] = None
+    gender: Optional[str] = None
+    country: Optional[str] = None
+    phone_number: Optional[str] = None
+
 class UserVerify(BaseModel):
+    """Modelo para manejar la verificación del usuario a través del token."""
     token: str

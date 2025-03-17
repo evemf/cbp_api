@@ -19,14 +19,20 @@ conf = ConnectionConfig(
 )
 
 
-async def send_verification_email(email: str, token: str):
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8000")  # Valor por defecto si no está en .env
+async def send_verification_email(email: str, token: str, backend_url: str = None):
+    if not backend_url:
+        backend_url = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
+    # En este caso, para construir el enlace de verificación usaremos el FRONTEND_URL, ya que queremos que el usuario llegue al frontend.
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
+    # Construimos el enlace usando el FRONTEND_URL para que el usuario llegue al componente VerifyEmail
     verification_link = f"{frontend_url}/auth/verify/{token}"
+    
     message = MessageSchema(
         subject="Verifica tu cuenta",
         recipients=[email],
         body=f"Por favor, haz clic en el siguiente enlace para verificar tu cuenta: {verification_link}",
         subtype="html"
     )
+    
     fm = FastMail(conf)
     await fm.send_message(message)

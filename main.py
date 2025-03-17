@@ -11,12 +11,13 @@ load_dotenv()
 app = FastAPI(title="Catalonia Blackball Party API")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8080")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
+    allow_origins=[FRONTEND_URL, BACKEND_URL, "http://localhost:8000"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 

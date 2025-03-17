@@ -1,17 +1,32 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
+import os
+from dotenv import load_dotenv
 
-# Clave secreta, debería ser una variable de entorno, pero para simplificar está fija aquí.
-SECRET_KEY = "c9eab3219f27fd5c07ef604a5c59d773b71c8a02ab9baf8c7984315d94b3723a"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+load_dotenv()
 
-# Función para crear el token de acceso
-def create_access_token(data: dict, expires_delta: timedelta = None):
+# Clave secreta (puedes obtenerla de variables de entorno)
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+VERIFICATION_TOKEN_EXPIRE_MINUTES = 60  # Configura un tiempo de expiración apropiado para el token de verificación
+
+# Función para crear un token de verificación
+def create_verification_token(data: dict, expires_delta: timedelta = None):
     if expires_delta is None:
-        expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta = timedelta(minutes=VERIFICATION_TOKEN_EXPIRE_MINUTES)
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "verification"})  # Puedes añadir un campo para diferenciar el tipo de token
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+# Función para verificar el token de verificación
+def verify_verification_token(token: str):
+    try:
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if decoded_token["type"] != "verification":
+            raise JWTError("Invalid token type")
+        return decoded_token
+    except JWTError:
+        raise JWTError("Token de verificación inválido o expirado.")
