@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, Cookie
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
@@ -47,6 +47,26 @@ async def complete_profile(
     user.hashed_password = hashed_password
     user.is_profile_complete = True
     db.commit()
+    return UserRead.from_orm(user)
+
+@router.get("/profile", response_model=UserRead)
+def get_user_profile(
+    request: Request,
+    db: Session = Depends(get_db),
+    access_token: str | None = Cookie(default=None)
+):
+    if not access_token:
+        raise HTTPException(status_code=401, detail="No autenticado")
+
+    try:
+        email = verify_token(access_token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+
+    user = get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
     return UserRead.from_orm(user)
 
 

@@ -58,25 +58,28 @@ ALGORITHM = os.getenv("ALGORITHM")
 if not SECRET_KEY or not ALGORITHM:
     raise ValueError("SECRET_KEY o ALGORITHM no están configurados en el archivo .env")
 
-@router.get("/me")
-def get_current_user(request: Request, access_token: str = Cookie(None)):
-    print(f"🔍 Cookies recibidas: {request.cookies}")
+from app.schemas.user import UserRead
 
+@router.get("/me", response_model=UserRead)
+def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    access_token: str = Cookie(None)
+):
     if not access_token:
-        print("❌ No se encontró el token en las cookies")
         raise HTTPException(status_code=401, detail="No autenticado")
-
-    print(f"🔑 Token leído de la cookie: {access_token}")
 
     try:
         payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-        print("✅ Token válido:", payload)
-        return {"message": "Token válido", "user": payload}
-    except jwt.ExpiredSignatureError:
-        print("❌ Token expirado")
+        email = payload.get("sub")
+        user = get_user_by_email(db, email)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        return UserRead.from_orm(user)
+
+    except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expirado")
-    except jwt.InvalidTokenError:
-        print("❌ Token inválido")
+    except InvalidTokenError:
         raise HTTPException(status_code=401, detail="Token inválido")
 
 
@@ -93,15 +96,21 @@ async def login(response: Response, credentials: UserLogin, db: Session = Depend
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,
+        secure=False,  # Usar True en producción si hay HTTPS
         samesite="Lax",
         max_age=3600,
         path="/"
     )
 
-    # Redirección manual al frontend
     frontend_redirect_url = f"{FRONTEND_URL}/dashboard"
-    return {"message": "Inicio de sesión exitoso", "redirect_url": frontend_redirect_url}
+    
+    return {
+        "message": "Inicio de sesión exitoso",
+        "redirect_url": frontend_redirect_url,
+        "user": UserRead.from_orm(user)  # Enviar datos del usuario al frontend
+    }
 
-
-
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie("access_token")
+    return {"message": "Logged out successfully"}
