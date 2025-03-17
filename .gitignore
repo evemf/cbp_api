@@ -55,3 +55,6 @@ poetry.toml
 
 # Archivos específicos de ASGI y WSGI
 *.sock
+
+# Firebase
+firebase_credentials.json
