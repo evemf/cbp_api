@@ -7,11 +7,14 @@ class ReservationBase(BaseModel):
     check_out: date
 
     class Config:
-        from_attributes = True
+        from_attributes = True  # Para Pydantic v2 (en v1 usar orm_mode = True)
 
 class ReservationCreate(ReservationBase):
     user_id: int
     competition_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True  # Para coherencia con los otros esquemas
 
 class ReservationRead(ReservationBase):
     id: int
@@ -21,9 +24,6 @@ class ReservationRead(ReservationBase):
     class Config:
         from_attributes = True
 
-class ReservationUpdate(BaseModel):
+class ReservationUpdate(ReservationBase):
     check_in: Optional[date] = None
     check_out: Optional[date] = None
-
-    class Config:
-        from_attributes = True

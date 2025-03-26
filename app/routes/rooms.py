@@ -1,43 +1,37 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.schemas.room import RoomCreate, RoomRead
 from app.crud import create_room, get_room, get_rooms, delete_room, update_available_rooms
+from app.schemas.room import RoomCreate, RoomUpdate  # Assegura't que aquests esquemes estan definits
 
-# Definimos el prefijo de las rutas como "/rooms"
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
-# Endpoint para crear una nueva habitación
-@router.post("/", response_model=RoomRead, tags=["rooms"])
-def create_new_room(room: RoomCreate, db: Session = Depends(get_db)):
-    return create_room(db, room)
+@router.post("/")
+def create_room_route(room: RoomCreate, db: Session = Depends(get_db)):
+    new_room = create_room(db, room)
+    if not new_room:
+        raise HTTPException(status_code=400, detail="Error al crear sala")
+    return new_room
 
-# Endpoint para listar todas las habitaciones
-@router.get("/", response_model=list[RoomRead], tags=["rooms"])
+@router.get("/")
 def list_rooms(db: Session = Depends(get_db), skip: int = 0, limit: int = 10):
-    rooms = get_rooms(db, skip=skip, limit=limit)
-    return rooms
+    return get_rooms(db, limit=limit, offset=skip)
 
-# Endpoint para obtener los detalles de una habitación específica
-@router.get("/{room_id}", response_model=RoomRead, tags=["rooms"])
-def get_room_detail(room_id: int, db: Session = Depends(get_db)):
+@router.get("/{room_id}")
+def read_room(room_id: int, db: Session = Depends(get_db)):
     room = get_room(db, room_id)
     if not room:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Habitación no encontrada")
+        raise HTTPException(status_code=404, detail="Sala no encontrada")
     return room
 
-# Endpoint para reservar una habitación
-@router.put("/{room_id}/reserve", response_model=RoomRead, tags=["rooms"])
-def reserve_room(room_id: int, quantity: int, db: Session = Depends(get_db)):
-    updated_room = update_available_rooms(db, room_id, quantity)
-    if not updated_room:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No hay suficientes habitaciones disponibles")
-    return updated_room
+@router.delete("/{room_id}")
+def delete_room_route(room_id: int, db: Session = Depends(get_db)):
+    room = delete_room(db, room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail="Sala no encontrada")
+    return {"message": "Sala eliminada correctamente"}
 
-# Endpoint para eliminar una habitación por su ID
-@router.delete("/{room_id}", response_model=dict, tags=["rooms"])
-def delete_room_by_id(room_id: int, db: Session = Depends(get_db)):
-    result = delete_room(db, room_id)
-    if "error" in result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=result["error"])
+@router.put("/update-availability")
+def update_rooms_availability(db: Session = Depends(get_db)):
+    result = update_available_rooms(db)
     return result

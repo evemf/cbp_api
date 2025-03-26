@@ -12,6 +12,7 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: int
     is_verified: bool
+    role: str
     is_profile_complete: bool
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -20,9 +21,9 @@ class UserRead(UserBase):
     country: Optional[str] = None
     phone_number: Optional[str] = None
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class UserCompleteProfile(BaseModel):
     """Usado cuando el usuario completa su perfil tras verificar su email."""
@@ -36,6 +37,8 @@ class UserCompleteProfile(BaseModel):
 
 class UserUpdate(BaseModel):
     """Usado para la página de 'Perfil de usuario', permite modificar datos opcionales."""
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     password: Optional[str] = None
     birth_date: Optional[date] = None
     gender: Optional[str] = None

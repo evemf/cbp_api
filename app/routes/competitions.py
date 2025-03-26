@@ -18,13 +18,29 @@ def get_competition(competition_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Competition not found")
     return competition
 
+from app.models.competition import Competition, CompetitionType
+from app.schemas.competition import CompetitionCreate, CompetitionRead, CompetitionUpdate
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from app.database import get_db
+
+router = APIRouter(prefix="/competitions", tags=["competitions"])
+
 @router.post("/", response_model=CompetitionRead)
 def create_competition(comp_data: CompetitionCreate, db: Session = Depends(get_db)):
-    new_competition = Competition(**comp_data.dict())
-    db.add(new_competition)
-    db.commit()
-    db.refresh(new_competition)
-    return new_competition
+    try:
+        comp_dict = comp_data.model_dump()
+        # Convertir el valor de competition_type a CompetitionType
+        comp_dict["competition_type"] = CompetitionType(comp_dict["competition_type"])
+        new_competition = Competition(**comp_dict)
+        db.add(new_competition)
+        db.commit()
+        db.refresh(new_competition)
+        return new_competition
+    except Exception as e:
+        print("Error al crear competición:", e)
+        raise HTTPException(status_code=500, detail="Error interno al crear la competición")
+
 
 @router.put("/{competition_id}", response_model=CompetitionRead)
 def update_competition(competition_id: int, comp_update: CompetitionUpdate, db: Session = Depends(get_db)):
